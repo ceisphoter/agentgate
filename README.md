@@ -4,7 +4,7 @@
 One address, one claim — sybil-resistant by design.
 
 🌐 **Live app:** https://ceisphoter.github.io/agentgate/
-📜 **Contract (BNB Chain):** `TO_BE_FILLED_AFTER_DEPLOYMENT`
+📜 **Contract (BNB Chain):** [`0xd95F6bCcdF9A1b693DA0a45DD0Fb262570a8E41e`](https://bscscan.com/address/0xd95F6bCcdF9A1b693DA0a45DD0Fb262570a8E41e) (deployed 2026-11-19, tx [`0x8b719d…51d`](https://bscscan.com/tx/0x8b719d2268b0d2733f5fb145c8768dd57e0194056848e406dff7dcc2d615a51d))
 🔎 **Agent ID contract:** `0x60b9262456de011f7d15a54cdd8c48baaa8b022f` (SPACE ID Agent ID, ERC-721)
 
 Built for the **Binance Wallet × BNB Chain Agent ID Hackathon** (Nov–Dec 2026).
