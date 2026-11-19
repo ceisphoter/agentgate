@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentGate — Agent ID Gated Campaigns & Claims</title>
+<meta name="description" content="AgentGate lets any project open a claim campaign that only Agent ID holders can join. One address, one claim, recorded on BNB Chain. Sybil-resistant by design.">
+<style>
+  :root{
+    --bg:#0b0e14; --card:#141926; --card2:#1a2133; --line:#26304a;
+    --text:#e8edf7; --muted:#93a1bd; --accent:#f0b90b; --accent2:#2bd98a;
+    --danger:#ff6473; --radius:14px;
+  }
+  *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
+  a{color:var(--accent)} .wrap{max-width:980px;margin:0 auto;padding:20px 16px 60px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0 18px;flex-wrap:wrap}
+  .logo{font-size:26px;font-weight:800;letter-spacing:.3px} .logo span{color:var(--accent)}
+  .sub{color:var(--muted);margin:2px 0 0;font-size:14px}
+  button{background:var(--accent);color:#141414;border:0;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:14px}
+  button:disabled{background:#3a4358;color:#8b96ad;cursor:not-allowed}
+  button.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin:14px 0}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .stat{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+  .stat b{font-size:24px;display:block} .stat small{color:var(--muted)}
+  .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--line)}
+  .ok{color:var(--accent2);border-color:var(--accent2)} .no{color:var(--danger);border-color:var(--danger)}
+  .camp{border:1px solid var(--line);border-radius:12px;padding:14px;margin:10px 0;background:var(--card2)}
+  .camp h3{margin:0 0 6px;font-size:17px} .meta{color:var(--muted);font-size:13px;line-height:1.5}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  input,select{width:100%;background:#0e1320;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px;margin:4px 0 10px}
+  label{font-size:13px;color:var(--muted)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .banner{background:#3a2f10;border:1px solid var(--accent);color:#ffe9a8;border-radius:12px;padding:12px 14px;margin:12px 0;font-size:14px}
+  .err{background:#3a1620;border:1px solid var(--danger);color:#ffb3ba;border-radius:12px;padding:12px 14px;margin:12px 0;font-size:14px;display:none}
+  footer{color:var(--muted);font-size:13px;margin-top:28px;line-height:1.6}
+  @media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="logo">Agent<span>Gate</span> 🛡️</div>
+      <p class="sub">Agent ID gated campaigns &amp; claims on BNB Chain. One address, one claim — sybil-resistant by design.</p>
+    </div>
+    <div class="row">
+      <span id="walletInfo" class="meta"></span>
+      <button id="btnConnect">Connect Wallet</button>
+    </div>
+  </header>
+
+  <div id="deployBanner" class="banner" style="display:none">⏳ The AgentGate contract is being deployed — claiming opens shortly. You can already explore the page.</div>
+  <div id="errBox" class="err"></div>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <b>Your Agent ID status</b>
+        <div id="holderStatus" class="meta">Connect a wallet to check whether it holds an Agent ID.</div>
+      </div>
+      <span id="holderBadge"></span>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button id="btnCheckIn" disabled>✅ Daily Check-In</button>
+      <span id="checkInInfo" class="meta"></span>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><b id="stCampaigns">–</b><small>Campaigns</small></div>
+    <div class="stat"><b id="stClaims">–</b><small>Total claims</small></div>
+    <div class="stat"><b id="stUnique">–</b><small>Unique Agent ID claimers</small></div>
+    <div class="stat"><b id="stCheckIns">–</b><small>Total check-ins</small></div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">Campaigns</h2>
+    <div id="campaignList"><p class="meta">Loading campaigns from BNB Chain…</p></div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">Open a campaign</h2>
+    <p class="meta">Any project can open a claim campaign. Only Agent ID holders will be able to claim — that is the whole point. Creating a campaign is free (you only pay the network gas fee).</p>
+    <label>Campaign name *</label>
+    <input id="fName" placeholder="e.g. Genesis Drop — Agent ID holders only">
+    <label>Project / details link</label>
+    <input id="fUri" placeholder="https://your-project.example/campaign">
+    <div class="grid2">
+      <div><label>Starts (optional — blank = now)</label><input id="fStart" type="datetime-local"></div>
+      <div><label>Ends (optional — blank = no end)</label><input id="fEnd" type="datetime-local"></div>
+    </div>
+    <label>Max claims (0 = unlimited)</label>
+    <input id="fMax" type="number" min="0" value="0">
+    <button id="btnCreate" disabled>Create campaign</button>
+    <span id="createInfo" class="meta"></span>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">How it works</h2>
+    <p class="meta" style="line-height:1.7">
+      Agent ID is the on-chain identity of an Agentic Wallet on BNB Chain (a non-transferable <i>name.ai</i> NFT,
+      contract <a id="agentIdLink" target="_blank" rel="noopener">0x60b9…022f</a>).
+      AgentGate reads <code>balanceOf(your address)</code> on that contract directly on-chain: if it is above zero,
+      your wallet is a verified Agent ID holder and can claim. No sign-ups, no lists, no servers — the gate is the chain itself.
+    </p>
+    <p class="meta" style="line-height:1.7">
+      <b>Safety:</b> AgentGate never holds, moves, or asks approval for your assets. Claims and check-ins are free
+      (network gas only), and the contract has no owner or admin who could change the rules after deployment.
+      Contract: <a id="gateLink" target="_blank" rel="noopener">view on BscScan</a>.
+    </p>
+    <p class="meta">AgentGate is an informational tool built for the Binance Wallet × BNB Chain Agent ID Hackathon. It does not promise or imply any returns.</p>
+  </div>
+
+  <footer>
+    Built for the Binance Wallet × BNB Chain <b>Agent ID Hackathon</b> (Nov–Dec 2026).<br>
+    AgentGate contract on BNB Chain: <span id="gateAddr">—</span>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<script>
+const CONFIG = {
+  // Filled in right after deployment:
+  contractAddress: "0x0000000000000000000000000000000000000000",
+  agentIdAddress: "0x60b9262456de011f7d15a54cdd8c48baaa8b022f",
+  chainId: 56,
+  readRpc: "https://bsc-dataseed.bnbchain.org"
+};
+const ABI = [
+  "function isAgentHolder(address) view returns (bool)",
+  "function campaignCount() view returns (uint256)",
+  "function getCampaign(uint256) view returns (tuple(address creator, string name, string uri, uint64 startTime, uint64 endTime, uint32 maxClaims, uint32 claimCount, bool closed))",
+  "function hasClaimed(uint256, address) view returns (bool)",
+  "function totalClaims() view returns (uint256)",
+  "function uniqueClaimers() view returns (uint256)",
+  "function totalCheckIns() view returns (uint256)",
+  "function checkInCount(address) view returns (uint32)",
+  "function lastCheckInDay(address) view returns (uint256)",
+  "function createCampaign(string, string, uint64, uint64, uint32) returns (uint256)",
+  "function claim(uint256)",
+  "function checkIn()",
+  "function closeCampaign(uint256)"
+];
+const $ = id => document.getElementById(id);
+const deployed = CONFIG.contractAddress !== "0x0000000000000000000000000000000000000000";
+let provider, signer, account, gate, gateRW;
+
+function showErr(msg){ const b=$("errBox"); b.textContent=msg; b.style.display="block"; setTimeout(()=>b.style.display="none", 9000); }
+function short(a){ return a ? a.slice(0,6)+"…"+a.slice(-4) : ""; }
+function fmtTime(sec){ if(!sec) return "—"; return new Date(Number(sec)*1000).toLocaleString(); }
+
+async function init(){
+  $("agentIdLink").href = "https://bscscan.com/address/" + CONFIG.agentIdAddress;
+  $("agentIdLink").textContent = short(CONFIG.agentIdAddress);
+  if(!deployed){ $("deployBanner").style.display="block"; $("gateAddr").textContent="deployment pending"; return; }
+  $("gateAddr").textContent = CONFIG.contractAddress;
+  $("gateLink").href = "https://bscscan.com/address/" + CONFIG.contractAddress;
+  provider = new ethers.JsonRpcProvider(CONFIG.readRpc);
+  gate = new ethers.Contract(CONFIG.contractAddress, ABI, provider);
+  await loadStats(); await loadCampaigns();
+  if(window.ethereum){
+    const accs = await window.ethereum.request({method:"eth_accounts"});
+    if(accs.length) await connect(true);
+    window.ethereum.on("accountsChanged", ()=>location.reload());
+    window.ethereum.on("chainChanged", ()=>location.reload());
+  }
+}
+
+async function loadStats(){
+  try{
+    const [n, tc, uq, ti] = await Promise.all([gate.campaignCount(), gate.totalClaims(), gate.uniqueClaimers(), gate.totalCheckIns()]);
+    $("stCampaigns").textContent = n; $("stClaims").textContent = tc;
+    $("stUnique").textContent = uq; $("stCheckIns").textContent = ti;
+  }catch(e){ /* RPC hiccup — leave dashes */ }
+}
+
+async function loadCampaigns(){
+  const list = $("campaignList");
+  try{
+    const n = Number(await gate.campaignCount());
+    if(n === 0){ list.innerHTML = '<p class="meta">No campaigns yet — be the first to open one below.</p>'; return; }
+    list.innerHTML = "";
+    for(let id = n-1; id >= 0; id--){
+      const c = await gate.getCampaign(id);
+      const div = document.createElement("div"); div.className = "camp";
+      const now = Math.floor(Date.now()/1000);
+      let state = "Open";
+      if(c.closed) state = "Closed";
+      else if(now < Number(c.startTime)) state = "Not started";
+      else if(Number(c.endTime) !== 0 && now > Number(c.endTime)) state = "Ended";
+      else if(Number(c.maxClaims) !== 0 && Number(c.claimCount) >= Number(c.maxClaims)) state = "Full";
+      div.innerHTML =
+        "<h3>" + escapeHtml(c.name) + "</h3>" +
+        '<div class="meta">By ' + short(c.creator) +
+        (c.uri ? ' · <a href="' + escapeHtml(c.uri) + '" target="_blank" rel="noopener">Details ↗</a>' : "") + "<br>" +
+        "Claims: <b>" + c.claimCount + "</b>" + (Number(c.maxClaims) ? " / " + c.maxClaims : " (unlimited)") +
+        " · Starts: " + fmtTime(c.startTime) + " · Ends: " + (Number(c.endTime) ? fmtTime(c.endTime) : "no end") +
+        " · Status: <b>" + state + "</b></div>" +
+        '<div class="row" style="margin-top:10px"><button data-claim="' + id + '">Claim</button>' +
+        '<span class="meta" data-claiminfo="' + id + '"></span></div>';
+      list.appendChild(div);
+    }
+    document.querySelectorAll("[data-claim]").forEach(b => b.onclick = () => doClaim(Number(b.dataset.claim), b));
+    await refreshClaimButtons();
+  }catch(e){ list.innerHTML = '<p class="meta">Could not load campaigns right now — please refresh.</p>'; }
+}
+
+function escapeHtml(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+
+async function refreshClaimButtons(){
+  const btns = document.querySelectorAll("[data-claim]");
+  for(const b of btns){
+    const id = Number(b.dataset.claim); const info = document.querySelector('[data-claiminfo="' + id + '"]');
+    if(!account){ b.disabled = true; info.textContent = "Connect a wallet to claim."; continue; }
+    try{
+      const c = await gate.getCampaign(id);
+      const claimed = await gate.hasClaimed(id, account);
+      const holder = await gate.isAgentHolder(account);
+      const now = Math.floor(Date.now()/1000);
+      if(claimed){ b.disabled = true; b.textContent = "Claimed ✓"; info.textContent = "Your claim is recorded on-chain."; }
+      else if(!holder){ b.disabled = true; info.textContent = "Only Agent ID holders can claim this campaign."; }
+      else if(c.closed){ b.disabled = true; info.textContent = "Campaign closed by its creator."; }
+      else if(now < Number(c.startTime)){ b.disabled = true; info.textContent = "Not started yet."; }
+      else if(Number(c.endTime) !== 0 && now > Number(c.endTime)){ b.disabled = true; info.textContent = "Campaign ended."; }
+      else if(Number(c.maxClaims) !== 0 && Number(c.claimCount) >= Number(c.maxClaims)){ b.disabled = true; info.textContent = "Campaign is full."; }
+      else { b.disabled = false; info.textContent = "You hold an Agent ID — you can claim."; }
+    }catch(e){ b.disabled = true; }
+  }
+}
+
+async function connect(silent){
+  if(!window.ethereum){ if(!silent) showErr("No wallet found. Open this page in a browser with a Web3 wallet (e.g. Binance Wallet) installed."); return; }
+  try{
+    const bp = new ethers.BrowserProvider(window.ethereum);
+    const net = await bp.getNetwork();
+    if(Number(net.chainId) !== CONFIG.chainId){
+      try{ await window.ethereum.request({method:"wallet_switchEthereumChain", params:[{chainId:"0x38"}]}); }
+      catch(e){ showErr("Please switch your wallet to BNB Chain."); return; }
+    }
+    signer = await bp.getSigner(); account = await signer.getAddress();
+    gateRW = new ethers.Contract(CONFIG.contractAddress, ABI, signer);
+    $("btnConnect").textContent = short(account);
+    $("walletInfo").textContent = "BNB Chain";
+    const holder = await gate.isAgentHolder(account);
+    $("holderBadge").innerHTML = holder ? '<span class="badge ok">Agent ID holder ✓</span>' : '<span class="badge no">No Agent ID</span>';
+    $("holderStatus").textContent = holder
+      ? "This wallet holds an Agent ID — claims and daily check-ins are unlocked."
+      : "This wallet does not hold an Agent ID. Agent IDs are claimed inside the Binance App (Wallet → Agent ID).";
+    const [cnt, last] = await Promise.all([gate.checkInCount(account), gate.lastCheckInDay(account)]);
+    const today = Math.floor(Date.now()/1000/86400);
+    const doneToday = Number(cnt) > 0 && Number(last) === today;
+    $("btnCheckIn").disabled = !holder || doneToday;
+    $("checkInInfo").textContent = holder
+      ? (doneToday ? "Already checked in today — come back tomorrow." : "You have " + cnt + " check-in(s) so far.")
+      : "Check-in is for Agent ID holders.";
+    $("btnCreate").disabled = false;
+    await refreshClaimButtons();
+  }catch(e){ if(!silent) showErr("Connection failed: " + (e.shortMessage || e.message)); }
+}
+
+async function doClaim(id, btn){
+  if(!gateRW){ await connect(); if(!gateRW) return; }
+  btn.disabled = true; btn.textContent = "Claiming…";
+  try{
+    const tx = await gateRW.claim(id); await tx.wait();
+    btn.textContent = "Claimed ✓";
+    await loadStats(); await loadCampaigns();
+  }catch(e){ showErr("Claim failed: " + (e.shortMessage || e.message)); btn.disabled = false; btn.textContent = "Claim"; }
+}
+
+$("btnConnect").onclick = () => connect();
+$("btnCheckIn").onclick = async () => {
+  if(!gateRW){ await connect(); if(!gateRW) return; }
+  $("btnCheckIn").disabled = true;
+  try{ const tx = await gateRW.checkIn(); await tx.wait(); $("checkInInfo").textContent = "Checked in ✓ — see you tomorrow."; await loadStats(); }
+  catch(e){ showErr("Check-in failed: " + (e.shortMessage || e.message)); $("btnCheckIn").disabled = false; }
+};
+$("btnCreate").onclick = async () => {
+  if(!gateRW){ await connect(); if(!gateRW) return; }
+  const name = $("fName").value.trim(); if(!name){ showErr("Campaign name is required."); return; }
+  const uri = $("fUri").value.trim();
+  const toSec = v => v ? BigInt(Math.floor(new Date(v).getTime()/1000)) : 0n;
+  const start = toSec($("fStart").value), end = toSec($("fEnd").value);
+  const max = BigInt($("fMax").value || "0");
+  $("btnCreate").disabled = true; $("createInfo").textContent = "Sending transaction…";
+  try{
+    const tx = await gateRW.createCampaign(name, uri, start, end, max); await tx.wait();
+    $("createInfo").textContent = "Campaign created ✓";
+    $("fName").value = ""; $("fUri").value = "";
+    await loadStats(); await loadCampaigns();
+  }catch(e){ showErr("Create failed: " + (e.shortMessage || e.message)); }
+  $("btnCreate").disabled = false;
+};
+
+init();
+</script>
+</body>
+</html>
